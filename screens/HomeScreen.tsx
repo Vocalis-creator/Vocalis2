@@ -2,14 +2,28 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TopNavigationBar } from '../components/TopNavigationBar';
 import { TourCard } from '../components/TourCard';
+import type { RootStackParamList } from '../navigation/AppNavigator';
+
+type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 export const HomeScreen = () => {
+  const navigation = useNavigation<HomeScreenNavigationProp>();
 
-  const handleTourPress = (tourTitle: string) => {
-    // TODO: Navigate to TourPlayer screen in next phase
-    console.log(`Open tour: ${tourTitle}`);
+  const handleTourPress = (tour: { title: string; distance: string; duration: string; rating: number }) => {
+    navigation.navigate('TourPlayer', {
+      title: tour.title,
+      distance: tour.distance,
+      duration: tour.duration,
+      rating: tour.rating,
+    });
+  };
+
+  const handleStartTour = () => {
+    navigation.navigate('CustomizeTour');
   };
 
   // Sample tour data (hardcoded for Phase 2)
@@ -51,7 +65,7 @@ export const HomeScreen = () => {
           </View>
           
           <View style={styles.startTourSection}>
-            <TouchableOpacity style={styles.startTourButton}>
+            <TouchableOpacity style={styles.startTourButton} onPress={handleStartTour}>
               <View style={styles.buttonContent}>
                 <Feather 
                   name="headphones" 
@@ -93,7 +107,7 @@ export const HomeScreen = () => {
                   duration={tour.duration}
                   imageUrl={tour.imageUrl}
                   rating={tour.rating}
-                  onPress={() => handleTourPress(tour.title)}
+                  onPress={() => handleTourPress(tour)}
                 />
               ))}
             </ScrollView>

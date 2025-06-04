@@ -43,6 +43,8 @@ This project uses **React Native** via **Expo with a custom Dev Client** — not
 
 ## 🧭 Screen Navigation Flow
 
+- HomeScreen → CustomizeTourScreen → TourPlayerScreen
+
 1. **SplashScreen**
    - Auto-launches on app open
    - Displays logo and animation
@@ -135,7 +137,22 @@ This project uses **React Native** via **Expo with a custom Dev Client** — not
 
 ## 🧪 In Progress
 
-- ✅ Splash Screen is currently under development and should launch the app directly into HomeScreen
-- 🔜 Next: Build HomeScreen with integrated content sections, navigation bar, and stubbed data
-- Supabase integration will begin after initial UI screens are working in iOS simulator
+- CustomizeTourScreen allows the user to:
+  - Enter a location or landmark of interest (free text for now)
+  - Choose tour duration with a slider (e.g., 5–30 mins)
+  - Select interests via tags (e.g., War, Mythology, Politics)
+  - Toggle for "Include directions / route guidance"
+  - Tap "Create Tour" → triggers generation and routes to buffering screen
 
+---
+
+## 🧩 Visual Design Reference
+
+The primary design reference for all screens is the **Magic Patterns prototype** (already imported). Cursor should match layout, spacing, and component structure to the prototype where appropriate.
+
+- Color palette: dark navy and bronze/gold
+- Font style: Arial, Calibri, or another clean, readable sans-serif
+- Layout structure (top nav, card sections, CTAs) follows the prototype
+- Do not invent new components unless necessary
+
+When building components, refer to the layout hierarchy and design intent of the Magic Patterns UI.

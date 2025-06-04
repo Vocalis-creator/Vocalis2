@@ -20,7 +20,14 @@ Goal: Build app features using static/dummy data before connecting to backend.
 
 - [ ] Build TourCard component with image, title, tags, and duration
 - [ ] Add AudioPlayer screen with static audio + play/pause
-- [ ] Add InterestSelector component (checkboxes, chips, etc.)
++ [ ] Add CustomizeTourScreen:
+    - Location entry input
+    - Duration slider
+    - Multi-select interest tags
+    - Toggle for directions/route guidance
+    - 'Create Tour' button
+    - Leads to loading/spinner screen
+
 - [ ] Wire up navigation between Home → Tour → AudioPlayer
 
 ---

@@ -4,11 +4,20 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SplashScreen } from '../screens/SplashScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { CustomizeTourScreen } from '../screens/CustomizeTourScreen';
+import { TourPlayerScreen } from '../screens/TourPlayerScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
   Home: undefined;
   Profile: undefined;
+  CustomizeTour: undefined;
+  TourPlayer: {
+    title: string;
+    distance?: string;
+    duration?: string;
+    rating?: number;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -25,6 +34,8 @@ export const AppNavigator = () => {
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="CustomizeTour" component={CustomizeTourScreen} />
+        <Stack.Screen name="TourPlayer" component={TourPlayerScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
