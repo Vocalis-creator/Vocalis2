@@ -16,6 +16,8 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+import { createTourRequest, validateTourRequest, type TourRequestDTO } from '../types';
+import { generateMockTour } from '../services';
 
 type CustomizeTourScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CustomizeTour'>;
 type CustomizeTourScreenRouteProp = RouteProp<RootStackParamList, 'CustomizeTour'>;
@@ -117,21 +119,64 @@ export const CustomizeTourScreen = () => {
     });
   };
 
-  const handleCreateTour = () => {
-    setIsLoading(true);
-    
-    // Simulate API call/generation time
-    setTimeout(() => {
+  /**
+   * Creates a tour request DTO from the current form state
+   * This will later be sent to the AI backend for tour generation
+   */
+  const buildTourRequest = (): TourRequestDTO => {
+    return createTourRequest({
+      location,
+      durationIndex,
+      selectedTopics,
+      includeRoute,
+      // TODO: Get actual user ID from authentication context when implemented
+      userId: null,
+      // TODO: Get user's preferred language from settings when implemented
+      language: 'en'
+    });
+  };
+
+  const handleCreateTour = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Build the tour request DTO
+      const tourRequest = buildTourRequest();
+      
+      // Validate the request
+      validateTourRequest(tourRequest);
+      
+      // Log the DTO for development purposes
+      console.log('🎧 Tour Request DTO:', {
+        ...tourRequest,
+        timestamp: new Date().toISOString(),
+        screen: 'CustomizeTourScreen'
+      });
+      
+      // Generate the mock tour using the new service
+      const generatedTour = await generateMockTour(tourRequest);
+      
+      console.log('✅ Tour generated successfully:', {
+        title: generatedTour.title,
+        segments: generatedTour.segments.length,
+        location: generatedTour.location
+      });
+      
       setIsLoading(false);
       
-      // Navigate to TourPlayerScreen with the customized parameters
+      // Navigate to TourPlayerScreen with the generated tour data
       navigation.navigate('TourPlayer', {
-        title: `${location} Tour`,
-        distance: '0.5 miles', // Could be calculated based on location
-        duration: `${durationOptions[durationIndex]} min`,
-        rating: 4.8, // Default rating for generated tours
+        tourData: generatedTour,
       });
-    }, 2000);
+      
+    } catch (error) {
+      console.error('❌ Error creating tour request:', error);
+      setIsLoading(false);
+      
+      // TODO: Show user-friendly error message
+      // For now, just log the error
+      alert(`Error: ${error instanceof Error ? error.message : 'Failed to create tour'}`);
+    }
   };
 
   const formatDuration = (minutes: number) => {

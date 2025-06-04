@@ -6,6 +6,7 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { CustomizeTourScreen } from '../screens/CustomizeTourScreen';
 import { TourPlayerScreen } from '../screens/TourPlayerScreen';
+import type { TourResponse } from '../types';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -13,10 +14,7 @@ export type RootStackParamList = {
   Profile: undefined;
   CustomizeTour: undefined;
   TourPlayer: {
-    title: string;
-    distance?: string;
-    duration?: string;
-    rating?: number;
+    tourData: TourResponse;
   };
 };
 

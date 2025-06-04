@@ -7,6 +7,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TopNavigationBar } from '../components/TopNavigationBar';
 import { TourCard } from '../components/TourCard';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+import type { TourResponse } from '../types';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -14,11 +15,36 @@ export const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
 
   const handleTourPress = (tour: { title: string; distance: string; duration: string; rating: number }) => {
-    navigation.navigate('TourPlayer', {
+    // Create a mock TourResponse for the hardcoded sample tours
+    const mockTourData: TourResponse = {
       title: tour.title,
-      distance: tour.distance,
-      duration: tour.duration,
-      rating: tour.rating,
+      location: tour.title.split(' ')[0], // Extract location from title
+      duration_minutes: parseInt(tour.duration.split(' ')[0]), // Extract minutes from duration string
+      interests: ['history', 'architecture'], // Default interests for sample tours
+      segments: [
+        {
+          title: `Welcome to ${tour.title}`,
+          text: `Welcome to your audio tour of ${tour.title}. This historic site offers incredible insights into the past. As you explore, you'll discover fascinating stories and learn about the cultural significance of this remarkable location. Listen carefully as we guide you through the most important highlights and hidden details that make this place truly special.`,
+          audio_url: 'https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav',
+          duration: 120,
+        },
+        {
+          title: 'Historical Context',
+          text: `The history of ${tour.title} spans many centuries. From its ancient origins to its modern significance, this location has witnessed countless events that shaped our world. The architecture you see today reflects the artistic and engineering achievements of past civilizations.`,
+          audio_url: 'https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav',
+          duration: 180,
+        },
+        {
+          title: 'Architectural Highlights',
+          text: `Notice the incredible architectural details surrounding you. Each element has been carefully crafted and preserved to maintain the authentic character of ${tour.title}. These structures represent the pinnacle of historical craftsmanship and design.`,
+          audio_url: 'https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav',
+          duration: 150,
+        },
+      ],
+    };
+
+    navigation.navigate('TourPlayer', {
+      tourData: mockTourData,
     });
   };
 
