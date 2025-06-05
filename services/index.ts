@@ -4,4 +4,6 @@
  */
 
 export * from './tourService';
-export * from './mockTourGenerator'; 
+export * from './mockTourGenerator';
+export * from './auth';
+export * from './supabase'; 

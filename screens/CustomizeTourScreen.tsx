@@ -18,6 +18,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { createTourRequest, validateTourRequest, type TourRequestDTO } from '../types';
 import { generateMockTour } from '../services';
+import { useAuth } from '../contexts/AuthContext';
 
 type CustomizeTourScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CustomizeTour'>;
 type CustomizeTourScreenRouteProp = RouteProp<RootStackParamList, 'CustomizeTour'>;
@@ -42,6 +43,7 @@ const { width: screenWidth } = Dimensions.get('window');
 export const CustomizeTourScreen = () => {
   const navigation = useNavigation<CustomizeTourScreenNavigationProp>();
   const route = useRoute<CustomizeTourScreenRouteProp>();
+  const { user } = useAuth();
   
   // Duration options as discrete intervals
   const durationOptions = [15, 30, 45, 60, 90, 120]; // in minutes
@@ -129,8 +131,8 @@ export const CustomizeTourScreen = () => {
       durationIndex,
       selectedTopics,
       includeRoute,
-      // TODO: Get actual user ID from authentication context when implemented
-      userId: null,
+      // Use authenticated user ID
+      userId: user?.id || null,
       // TODO: Get user's preferred language from settings when implemented
       language: 'en'
     });
