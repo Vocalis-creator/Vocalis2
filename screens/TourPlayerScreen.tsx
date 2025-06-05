@@ -86,11 +86,18 @@ export const TourPlayerScreen = () => {
       console.log('🎵 Loading audio for segment:', currentSegment.title);
       console.log('🎵 Audio URL:', currentSegment.audio_url);
       
+      // Add timeout for audio loading
+      const loadingTimeout = setTimeout(() => {
+        console.warn('⚠️ Audio loading timeout - proceeding without audio');
+        setIsLoading(false);
+      }, 10000); // 10 second timeout
+      
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: currentSegment.audio_url },
         { shouldPlay: false }
       );
       
+      clearTimeout(loadingTimeout);
       setSound(newSound);
       
       // Set up status update callback
@@ -104,13 +111,18 @@ export const TourPlayerScreen = () => {
           if (status.didJustFinish && currentSegmentIndex < tourData.segments.length - 1) {
             setCurrentSegmentIndex(prev => prev + 1);
           }
+        } else if (status.error) {
+          console.error('❌ Audio playback error:', status.error);
+          setIsLoading(false);
         }
       });
       
       setIsLoading(false);
+      console.log('✅ Audio loaded successfully');
     } catch (error) {
-      console.error('Error loading audio:', error);
+      console.error('❌ Error loading audio:', error);
       setIsLoading(false);
+      // Continue without audio rather than staying stuck
     }
   };
 
@@ -169,7 +181,7 @@ export const TourPlayerScreen = () => {
   };
 
   // Split transcript into sentences for better highlighting
-  const transcriptSentences = currentSegment.text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const transcriptSentences = currentSegment.content.split(/[.!?]+/).filter(s => s.trim().length > 0);
   
   const getCurrentSentenceIndex = () => {
     if (transcriptSentences.length === 0) return 0;
@@ -211,7 +223,7 @@ export const TourPlayerScreen = () => {
           <View style={styles.segmentMeta}>
             <Text style={styles.segmentLocation}>{tourData.location}</Text>
             <Text style={styles.segmentDuration}>
-              ~{Math.ceil(currentSegment.duration / 60)} min
+              ~{Math.ceil(currentSegment.duration_seconds / 60)} min
             </Text>
           </View>
         </View>

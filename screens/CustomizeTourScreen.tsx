@@ -17,7 +17,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { createTourRequest, validateTourRequest, type TourRequestDTO } from '../types';
-import { generateMockTour } from '../services';
+import { generateMockTour, saveTourToDatabase } from '../services';
 import { useAuth } from '../contexts/AuthContext';
 
 type CustomizeTourScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CustomizeTour'>;
@@ -165,6 +165,17 @@ export const CustomizeTourScreen = () => {
       });
       
       setIsLoading(false);
+      
+      // Save the tour to the database if user is authenticated
+      if (user?.id) {
+        try {
+          await saveTourToDatabase(user.id, generatedTour);
+          console.log('✅ Tour saved to database successfully');
+        } catch (error) {
+          console.error('❌ Failed to save tour to database:', error);
+          // Continue with navigation even if saving fails
+        }
+      }
       
       // Navigate to TourPlayerScreen with the generated tour data
       navigation.navigate('TourPlayer', {

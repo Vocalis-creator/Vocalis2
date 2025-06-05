@@ -24,12 +24,12 @@ const TOUR_TEMPLATES = {
       {
         title: 'Renaissance Masterpieces',
         textTemplate: 'Welcome to one of the world\'s greatest collections of Renaissance art. Here at {location}, you\'ll discover masterpieces that have inspired artists for centuries.',
-        duration: 180,
+        duration_seconds: 180,
       },
       {
         title: 'Artistic Techniques',
         textTemplate: 'Notice the incredible detail and use of perspective in these works. The artists of {location} pioneered techniques that revolutionized art.',
-        duration: 150,
+        duration_seconds: 150,
       },
     ],
   },
@@ -38,12 +38,12 @@ const TOUR_TEMPLATES = {
       {
         title: 'Historical Foundations',
         textTemplate: 'Step back in time as we explore the rich history of {location}. This place has witnessed centuries of human civilization.',
-        duration: 200,
+        duration_seconds: 200,
       },
       {
         title: 'Cultural Heritage',
         textTemplate: 'The stories embedded in these walls tell of triumph, struggle, and the enduring human spirit that defines {location}.',
-        duration: 165,
+        duration_seconds: 165,
       },
     ],
   },
@@ -52,12 +52,12 @@ const TOUR_TEMPLATES = {
       {
         title: 'Sacred Spaces',
         textTemplate: 'You\'re standing in one of the most sacred places on Earth. {location} has been a center of spiritual pilgrimage for generations.',
-        duration: 190,
+        duration_seconds: 190,
       },
       {
         title: 'Spiritual Significance',
         textTemplate: 'The architectural elements around you tell stories of faith, devotion, and the human quest for the divine at {location}.',
-        duration: 170,
+        duration_seconds: 170,
       },
     ],
   },
@@ -66,12 +66,12 @@ const TOUR_TEMPLATES = {
       {
         title: 'Architectural Marvel',
         textTemplate: 'Marvel at the incredible architecture of {location}. Every stone, every arch tells a story of human ingenuity and artistic vision.',
-        duration: 175,
+        duration_seconds: 175,
       },
       {
         title: 'Engineering Wonder',
         textTemplate: 'The construction of {location} represents one of humanity\'s greatest architectural achievements, combining beauty with structural brilliance.',
-        duration: 185,
+        duration_seconds: 185,
       },
     ],
   },
@@ -80,17 +80,17 @@ const TOUR_TEMPLATES = {
       {
         title: 'Welcome to Your Tour',
         textTemplate: 'Welcome to your personalized audio tour of {location}. Get ready to discover the fascinating stories behind this remarkable place.',
-        duration: 120,
+        duration_seconds: 120,
       },
       {
         title: 'Hidden Stories',
         textTemplate: 'As we explore {location} together, you\'ll uncover hidden stories and secrets that most visitors never learn about.',
-        duration: 140,
+        duration_seconds: 140,
       },
       {
         title: 'Cultural Impact',
         textTemplate: 'The influence of {location} extends far beyond its physical boundaries, shaping culture and inspiring people around the world.',
-        duration: 160,
+        duration_seconds: 160,
       },
     ],
   },
@@ -119,9 +119,10 @@ export async function generateMockTour(request: TourRequestDTO): Promise<TourRes
       const segmentTemplate = template.segments[0]; // Use first segment for simplicity
       selectedSegments.push({
         title: segmentTemplate.title,
-        text: segmentTemplate.textTemplate.replace(/{location}/g, request.location),
+        content: segmentTemplate.textTemplate.replace(/{location}/g, request.location),
         audio_url: SAMPLE_AUDIO_URLS[selectedSegments.length % SAMPLE_AUDIO_URLS.length],
-        duration: segmentTemplate.duration,
+        duration_seconds: segmentTemplate.duration_seconds,
+        order_index: selectedSegments.length + 1,
       });
       usedTemplates.add(interest);
     }
@@ -131,15 +132,16 @@ export async function generateMockTour(request: TourRequestDTO): Promise<TourRes
   if (selectedSegments.length === 0) {
     selectedSegments.push({
       title: TOUR_TEMPLATES.default.segments[0].title,
-      text: TOUR_TEMPLATES.default.segments[0].textTemplate.replace(/{location}/g, request.location),
+      content: TOUR_TEMPLATES.default.segments[0].textTemplate.replace(/{location}/g, request.location),
       audio_url: SAMPLE_AUDIO_URLS[0],
-      duration: TOUR_TEMPLATES.default.segments[0].duration,
+      duration_seconds: TOUR_TEMPLATES.default.segments[0].duration_seconds,
+      order_index: 1,
     });
   }
 
   // Add more segments to fill the requested duration
   const targetDuration = request.duration_minutes * 60; // Convert to seconds
-  let currentDuration = selectedSegments.reduce((sum, segment) => sum + segment.duration, 0);
+  let currentDuration = selectedSegments.reduce((sum, segment) => sum + segment.duration_seconds, 0);
 
   // Add additional segments if needed to reach target duration
   const defaultSegments = TOUR_TEMPLATES.default.segments;
@@ -149,11 +151,12 @@ export async function generateMockTour(request: TourRequestDTO): Promise<TourRes
     const template = defaultSegments[segmentIndex % defaultSegments.length];
     selectedSegments.push({
       title: template.title,
-      text: template.textTemplate.replace(/{location}/g, request.location),
+      content: template.textTemplate.replace(/{location}/g, request.location),
       audio_url: SAMPLE_AUDIO_URLS[selectedSegments.length % SAMPLE_AUDIO_URLS.length],
-      duration: template.duration,
+      duration_seconds: template.duration_seconds,
+      order_index: selectedSegments.length + 1,
     });
-    currentDuration += template.duration;
+    currentDuration += template.duration_seconds;
     segmentIndex++;
   }
 
@@ -161,9 +164,10 @@ export async function generateMockTour(request: TourRequestDTO): Promise<TourRes
   if (request.include_directions) {
     selectedSegments.push({
       title: 'Navigation Guide',
-      text: `Your tour of ${request.location} includes turn-by-turn directions to help you navigate between points of interest. Follow the audio cues to make the most of your visit.`,
+      content: `Your tour of ${request.location} includes turn-by-turn directions to help you navigate between points of interest. Follow the audio cues to make the most of your visit.`,
       audio_url: SAMPLE_AUDIO_URLS[selectedSegments.length % SAMPLE_AUDIO_URLS.length],
-      duration: 90,
+      duration_seconds: 90,
+      order_index: selectedSegments.length + 1,
     });
   }
 
@@ -178,7 +182,7 @@ export async function generateMockTour(request: TourRequestDTO): Promise<TourRes
   console.log('✅ MockTourGenerator: Tour generated successfully:', {
     title: tour.title,
     segments: tour.segments.length,
-    totalDuration: tour.segments.reduce((sum, s) => sum + s.duration, 0),
+    totalDuration: tour.segments.reduce((sum, s) => sum + s.duration_seconds, 0),
   });
 
   return tour;

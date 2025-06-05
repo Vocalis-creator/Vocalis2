@@ -28,11 +28,14 @@ export interface TourSegment {
   title: string;
   
   /** Text content/transcript for this segment */
-  text: string;
+  content: string;
   
   /** URL to the audio file for this segment */
   audio_url: string;
   
   /** Duration of this segment in seconds */
-  duration: number;
+  duration_seconds: number;
+  
+  /** Order of this segment in the tour */
+  order_index: number;
 } 

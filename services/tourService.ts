@@ -1,4 +1,5 @@
-import type { TourRequestDTO } from '../types';
+import type { TourRequestDTO, TourResponse } from '../types';
+import { supabase } from './supabase';
 
 /**
  * Response structure for generated tours
@@ -124,4 +125,144 @@ export class TourService {
 }
 
 // Export singleton instance for easy importing
-export const tourService = TourService.getInstance(); 
+export const tourService = TourService.getInstance();
+
+/**
+ * Fetches all tours for a specific user from the database
+ * @param userId - The ID of the user whose tours to fetch
+ * @returns Promise resolving to array of TourResponse objects
+ */
+export async function fetchUserTours(userId: string): Promise<TourResponse[]> {
+  try {
+    console.log('🔍 Fetching tours for user:', userId);
+
+    // Fetch tours from the database
+    const { data: tours, error } = await supabase
+      .from('tours')
+      .select(`
+        id,
+        title,
+        location,
+        duration_minutes,
+        interests,
+        segments
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('❌ Error fetching tours:', error);
+      throw new Error(`Failed to fetch tours: ${error.message}`);
+    }
+
+    if (!tours || tours.length === 0) {
+      console.log('📭 No tours found for user');
+      return [];
+    }
+
+    // Transform database tours into TourResponse objects
+    const tourResponses: TourResponse[] = [];
+
+    for (const tour of tours) {
+      let segments: TourResponse['segments'] = [];
+
+      // Check if segments exist in the tours table (JSONB)
+      if (tour.segments && Array.isArray(tour.segments)) {
+        segments = tour.segments.map(segment => ({
+          title: segment.title,
+          content: segment.content,
+          audio_url: segment.audio_url,
+          duration_seconds: segment.duration_seconds,
+          order_index: segment.order_index,
+        }));
+      } else {
+        // Fallback: fetch from tour_segments table
+        const { data: tourSegments, error: segmentsError } = await supabase
+          .from('tour_segments')
+          .select('title, content, audio_url, duration_seconds, order_index')
+          .eq('tour_id', tour.id)
+          .order('order_index', { ascending: true });
+
+        if (segmentsError) {
+          console.error('❌ Error fetching tour segments:', segmentsError);
+          // Continue with empty segments rather than failing
+          segments = [];
+        } else if (tourSegments) {
+          segments = tourSegments;
+        }
+      }
+
+      // Handle interests - check if it's already an array or needs parsing
+      const interests = Array.isArray(tour.interests) 
+        ? tour.interests 
+        : tour.interests 
+          ? tour.interests.split(',').map((interest: string) => interest.trim()).filter(Boolean)
+          : [];
+
+      tourResponses.push({
+        title: tour.title,
+        location: tour.location,
+        duration_minutes: tour.duration_minutes,
+        interests,
+        segments,
+      });
+    }
+
+    console.log(`✅ Successfully fetched ${tourResponses.length} tours`);
+    return tourResponses;
+
+  } catch (error) {
+    console.error('❌ Error in fetchUserTours:', error);
+    throw error;
+  }
+}
+
+/**
+ * Saves a generated tour to the database
+ * @param userId - The ID of the user who created the tour
+ * @param tour - The generated tour data to save
+ * @returns Promise resolving to the saved tour ID
+ */
+export async function saveTourToDatabase(userId: string, tour: TourResponse): Promise<string> {
+  try {
+    console.log('💾 Saving tour to database:', { userId, title: tour.title });
+
+    // Convert interests array to comma-separated string for database storage
+    const interestsString = tour.interests.join(', ');
+
+    // Prepare segments data for JSONB storage
+    const segmentsData = tour.segments.map(segment => ({
+      title: segment.title,
+      content: segment.content,
+      audio_url: segment.audio_url,
+      duration_seconds: segment.duration_seconds,
+      order_index: segment.order_index,
+    }));
+
+    // Insert tour into database
+    const { data, error } = await supabase
+      .from('tours')
+      .insert([{
+        user_id: userId,
+        title: tour.title,
+        location: tour.location,
+        duration_minutes: tour.duration_minutes,
+        interests: tour.interests, // This will be an array in the database
+        segments: segmentsData,
+      }])
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('❌ Error saving tour:', error);
+      throw new Error(`Failed to save tour: ${error.message}`);
+    }
+
+    console.log('✅ Tour saved successfully with ID:', data.id);
+    return data.id;
+
+  } catch (error) {
+    console.error('❌ Error in saveTourToDatabase:', error);
+    throw error;
+  }
+} 

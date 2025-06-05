@@ -1,20 +1,32 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TopNavigationBar } from '../components/TopNavigationBar';
 import { TourCard } from '../components/TourCard';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import type { TourResponse } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { fetchUserTours } from '../services/tourService';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 export const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const { user } = useAuth();
+  const [userTours, setUserTours] = useState<TourResponse[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleTourPress = (tour: { title: string; distance: string; duration: string; rating: number }) => {
+  const handleTourPress = (tour: TourResponse) => {
+    navigation.navigate('TourPlayer', {
+      tourData: tour,
+    });
+  };
+
+  const handleSampleTourPress = (tour: { title: string; distance: string; duration: string; rating: number }) => {
     // Create a mock TourResponse for the hardcoded sample tours
     const mockTourData: TourResponse = {
       title: tour.title,
@@ -24,21 +36,24 @@ export const HomeScreen = () => {
       segments: [
         {
           title: `Welcome to ${tour.title}`,
-          text: `Welcome to your audio tour of ${tour.title}. This historic site offers incredible insights into the past. As you explore, you'll discover fascinating stories and learn about the cultural significance of this remarkable location. Listen carefully as we guide you through the most important highlights and hidden details that make this place truly special.`,
+          content: `Welcome to your audio tour of ${tour.title}. This historic site offers incredible insights into the past. As you explore, you'll discover fascinating stories and learn about the cultural significance of this remarkable location. Listen carefully as we guide you through the most important highlights and hidden details that make this place truly special.`,
           audio_url: 'https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav',
-          duration: 120,
+          duration_seconds: 120,
+          order_index: 1,
         },
         {
           title: 'Historical Context',
-          text: `The history of ${tour.title} spans many centuries. From its ancient origins to its modern significance, this location has witnessed countless events that shaped our world. The architecture you see today reflects the artistic and engineering achievements of past civilizations.`,
+          content: `The history of ${tour.title} spans many centuries. From its ancient origins to its modern significance, this location has witnessed countless events that shaped our world. The architecture you see today reflects the artistic and engineering achievements of past civilizations.`,
           audio_url: 'https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav',
-          duration: 180,
+          duration_seconds: 180,
+          order_index: 2,
         },
         {
           title: 'Architectural Highlights',
-          text: `Notice the incredible architectural details surrounding you. Each element has been carefully crafted and preserved to maintain the authentic character of ${tour.title}. These structures represent the pinnacle of historical craftsmanship and design.`,
+          content: `Notice the incredible architectural details surrounding you. Each element has been carefully crafted and preserved to maintain the authentic character of ${tour.title}. These structures represent the pinnacle of historical craftsmanship and design.`,
           audio_url: 'https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav',
-          duration: 150,
+          duration_seconds: 150,
+          order_index: 3,
         },
       ],
     };
@@ -51,6 +66,30 @@ export const HomeScreen = () => {
   const handleStartTour = () => {
     navigation.navigate('CustomizeTour');
   };
+
+  // Fetch user tours when component mounts or user changes
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadUserTours = async () => {
+        if (!user?.id) return;
+
+        setLoading(true);
+        setError(null);
+
+        try {
+          const tours = await fetchUserTours(user.id);
+          setUserTours(tours);
+        } catch (err) {
+          console.error('Error fetching user tours:', err);
+          setError('Failed to load your tours. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadUserTours();
+    }, [user?.id])
+  );
 
   // Sample tour data (hardcoded for Phase 2)
   const sampleTours = [
@@ -103,6 +142,90 @@ export const HomeScreen = () => {
               </View>
             </TouchableOpacity>
           </View>
+
+          {/* User Tours Section */}
+          {user && (
+            <View style={styles.userToursSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Your Tours</Text>
+                <View style={styles.tourCountIndicator}>
+                  <Feather 
+                    name="bookmark" 
+                    size={16} 
+                    color="#D4B46E" 
+                    style={styles.bookmarkIcon}
+                  />
+                  <Text style={styles.tourCountText}>{userTours.length}</Text>
+                </View>
+              </View>
+
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#D4B46E" />
+                  <Text style={styles.loadingText}>Loading your tours...</Text>
+                </View>
+              ) : error ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{error}</Text>
+                  <TouchableOpacity 
+                    style={styles.retryButton}
+                    onPress={() => {
+                      if (user?.id) {
+                        const loadUserTours = async () => {
+                          setLoading(true);
+                          setError(null);
+                          try {
+                            const tours = await fetchUserTours(user.id);
+                            setUserTours(tours);
+                          } catch (err) {
+                            setError('Failed to load your tours. Please try again.');
+                          } finally {
+                            setLoading(false);
+                          }
+                        };
+                        loadUserTours();
+                      }
+                    }}
+                  >
+                    <Text style={styles.retryButtonText}>Retry</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : userTours.length > 0 ? (
+                <ScrollView style={styles.userToursList}>
+                  {userTours.map((tour, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.userTourItem}
+                      onPress={() => handleTourPress(tour)}
+                    >
+                      <View style={styles.userTourInfo}>
+                        <Text style={styles.userTourTitle}>{tour.title}</Text>
+                        <Text style={styles.userTourDetails}>
+                          {tour.location} • {tour.duration_minutes} min • {tour.segments.length} stops
+                        </Text>
+                        <View style={styles.userTourInterests}>
+                          {tour.interests.slice(0, 3).map((interest, i) => (
+                            <Text key={i} style={styles.interestTag}>
+                              {interest}
+                            </Text>
+                          ))}
+                        </View>
+                      </View>
+                      <Feather name="chevron-right" size={20} color="#9CA3AF" />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              ) : (
+                <View style={styles.emptyStateContainer}>
+                  <Feather name="map" size={48} color="#6B7280" style={styles.emptyStateIcon} />
+                  <Text style={styles.emptyStateTitle}>No tours yet</Text>
+                  <Text style={styles.emptyStateText}>
+                    You haven't created any tours yet. Start a new tour to explore!
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
           
           <View style={styles.nearbySitesSection}>
             <View style={styles.sectionHeader}>
@@ -133,7 +256,7 @@ export const HomeScreen = () => {
                   duration={tour.duration}
                   imageUrl={tour.imageUrl}
                   rating={tour.rating}
-                  onPress={() => handleTourPress(tour)}
+                  onPress={() => handleSampleTourPress(tour)}
                 />
               ))}
             </ScrollView>
@@ -198,6 +321,118 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#0A1929', // navy-900 for contrast
+    fontFamily: 'Arial',
+  },
+  userToursSection: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    marginTop: 12,
+    fontFamily: 'Arial',
+  },
+  errorContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontFamily: 'Arial',
+  },
+  retryButton: {
+    backgroundColor: '#D4B46E',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0A1929',
+    fontFamily: 'Arial',
+  },
+  userToursList: {
+    maxHeight: 300,
+  },
+  userTourItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  userTourInfo: {
+    flex: 1,
+  },
+  userTourTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 4,
+    fontFamily: 'Arial',
+  },
+  userTourDetails: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginBottom: 8,
+    fontFamily: 'Arial',
+  },
+  userTourInterests: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  interestTag: {
+    fontSize: 12,
+    color: '#D4B46E',
+    backgroundColor: '#D4B46E20',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
+    marginBottom: 4,
+    fontFamily: 'Arial',
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyStateIcon: {
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    fontFamily: 'Arial',
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    fontFamily: 'Arial',
+  },
+  tourCountIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bookmarkIcon: {
+    marginRight: 4,
+  },
+  tourCountText: {
+    fontSize: 14,
+    color: '#D4B46E',
     fontFamily: 'Arial',
   },
   nearbySitesSection: {

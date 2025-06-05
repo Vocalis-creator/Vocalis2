@@ -63,7 +63,8 @@ export interface Database {
           title: string;
           location: string;
           duration_minutes: number;
-          interests: string[];
+          interests: string[]; // Array field, not text
+          segments: TourSegmentData[] | null; // JSONB array
           created_at: string;
         };
         Insert: {
@@ -73,6 +74,7 @@ export interface Database {
           location: string;
           duration_minutes: number;
           interests: string[];
+          segments?: TourSegmentData[] | null;
           created_at?: string;
         };
         Update: {
@@ -82,10 +84,53 @@ export interface Database {
           location?: string;
           duration_minutes?: number;
           interests?: string[];
+          segments?: TourSegmentData[] | null;
+        };
+      };
+      tour_segments: {
+        Row: {
+          id: string;
+          tour_id: string;
+          title: string;
+          content: string;
+          audio_url: string;
+          duration_seconds: number;
+          order_index: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tour_id: string;
+          title: string;
+          content: string;
+          audio_url: string;
+          duration_seconds: number;
+          order_index: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tour_id?: string;
+          title?: string;
+          content?: string;
+          audio_url?: string;
+          duration_seconds?: number;
+          order_index?: number;
         };
       };
     };
   };
+}
+
+/**
+ * Type for tour segment data stored in JSONB
+ */
+export interface TourSegmentData {
+  title: string;
+  content: string;
+  audio_url: string;
+  duration_seconds: number;
+  order_index: number;
 }
 
 // Type the Supabase client
